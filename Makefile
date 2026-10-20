@@ -1,6 +1,7 @@
 # One command after cloning:  make
 # Creates .venv, installs dependencies, creates .env from .env.example, runs the offline tests and a demo review.
 # Requires Python 3.10+ and make (Linux, macOS, or WSL on Windows). Nothing here calls a real model except `make live`.
+# Tools run as `python -m <tool>` so the venv also works where scripts cannot be executed directly (noexec mounts).
 
 PYTHON ?= python3
 VENV := .venv
@@ -14,8 +15,8 @@ all: test demo
 $(STAMP): pyproject.toml
 	@$(PYTHON) -c 'import sys; sys.exit("Python 3.10+ is required (found %s)" % sys.version.split()[0]) if sys.version_info < (3, 10) else None'
 	$(PYTHON) -m venv $(VENV)
-	$(BIN)/pip install --quiet --upgrade pip
-	$(BIN)/pip install --quiet -e ".[dev,llm]"
+	$(BIN)/python -m pip install --quiet --upgrade pip
+	$(BIN)/python -m pip install --quiet -e ".[dev,llm]"
 	@touch $(STAMP)
 
 .env:
@@ -28,8 +29,8 @@ test: setup  ## offline test suite; any network access fails the run
 	$(BIN)/python -m pytest -q
 
 lint: setup
-	$(BIN)/ruff check app tests
-	$(BIN)/ruff format --check app tests
+	$(BIN)/python -m ruff check app tests
+	$(BIN)/python -m ruff format --check app tests
 
 demo: setup  ## scripted mock review of the benchmark PR (no API key, no network)
 	$(BIN)/python -m app.cli review --case authorization-bypass --publishable
@@ -38,7 +39,7 @@ evaluate: setup  ## mock benchmark: tests the pipeline, not a model
 	$(BIN)/python -m app.cli evaluate --db mock-eval.db
 
 serve: setup  ## API on http://localhost:8000 (uses the provider configured in .env)
-	$(BIN)/uvicorn app.main:create_app --factory --port 8000
+	$(BIN)/python -m uvicorn app.main:create_app --factory --port 8000
 
 # Real model calls (uses quota/credits). Needs LLM_PROVIDER=litellm, LLM_MODEL and the provider key in .env.
 # Refuses to overwrite earlier results. Override names with: make live RUN=2
