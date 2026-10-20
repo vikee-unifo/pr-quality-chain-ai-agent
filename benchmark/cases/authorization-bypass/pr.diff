@@ -1,0 +1,13 @@
+diff --git a/src/accounts.ts b/src/accounts.ts
+index fcec7e1..94f0780 100644
+--- a/src/accounts.ts
++++ b/src/accounts.ts
+@@ -18,8 +18,5 @@ export function getOwnedAccount(store: Store, userId: string, accountId: string)
+   if (!account) {
+     throw new AppError(404, 'ACCOUNT_NOT_FOUND', 'Account not found');
+   }
+-  if (account.ownerId !== userId) {
+-    throw new AppError(403, 'FORBIDDEN', 'You do not own this account');
+-  }
+   return account;
+ }

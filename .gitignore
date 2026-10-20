@@ -1,0 +1,45 @@
+# Environment files (keep the template)
+.env
+.env.*
+!.env.example
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Tool caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+
+# Build and distribution
+build/
+dist/
+*.egg-info/
+
+# Logs and local databases
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Ad-hoc live/mock run outputs (copy runs worth keeping into evaluation-result/; *.log and *.db stay local)
+/live-eval-*.md
+
+# Local tool state
+.claude/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

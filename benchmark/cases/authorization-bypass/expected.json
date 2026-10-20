@@ -1,0 +1,27 @@
+{
+  "_comment": "Ground-truth labels written independently of any review output. Never sent to a model. Do not edit to match results. Matching rules: see matches_seeded in app/evaluation.py.",
+  "seeded_issues": [
+    {
+      "id": "AUTHZ-1",
+      "description": "Ownership check removed from getOwnedAccount: any authenticated user can read or transfer from another user's account (broken object-level authorization).",
+      "severity": "high",
+      "categories": ["security"],
+      "file_path": "src/accounts.ts",
+      "line_ranges": {"old": [21, 23], "new": [18, 22]},
+      "line_tolerance": 2,
+      "concept_terms": [
+        ["owner", "ownership"],
+        ["authoriz", "access control", "forbidden", "403", "another user", "other user", "any user", "any authenticated user", "idor", "object-level"]
+      ],
+      "evidence_terms": ["ownerId"]
+    }
+  ],
+  "acceptable_findings": [
+    {
+      "id": "TEST-1",
+      "description": "Tests were not updated; existing 403 tests for cross-account reads/transfers will now fail or should be kept as regression guards.",
+      "category": "testing",
+      "file_paths": ["src/accounts.ts", "test/api.test.ts"]
+    }
+  ]
+}

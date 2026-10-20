@@ -1,0 +1,30 @@
+[project]
+name = "pr-quality-chain"
+version = "0.1.0"
+description = "AI-assisted GitHub pull request review and quality assurance"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "pydantic>=2.6",
+    "httpx>=0.27",
+    "uvicorn>=0.29",
+]
+
+[project.optional-dependencies]
+# Real model providers (Anthropic, OpenAI, Gemini, ...). Not needed for the mock provider or the tests.
+llm = ["litellm>=1.50"]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[tool.setuptools]
+packages = ["app", "app.llm"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]

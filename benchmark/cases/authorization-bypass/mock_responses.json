@@ -1,0 +1,88 @@
+{
+  "_comment": "SCRIPTED mock output for offline tests. These findings were written by hand; they are NOT model detections.",
+  "security": [
+    {
+      "findings": [
+        {
+          "title": "Ownership check removed: broken object-level authorization",
+          "description": "getOwnedAccount no longer verifies that the account belongs to userId. Every caller that relies on it (GET /accounts/:id and the source account of POST /transfers) now lets any authenticated user act on any account.",
+          "severity": "high",
+          "category": "security",
+          "file_path": "src/accounts.ts",
+          "start_line": 21,
+          "end_line": 23,
+          "evidence": "if (account.ownerId !== userId) {\n  throw new AppError(403, 'FORBIDDEN', 'You do not own this account');",
+          "impact": "Any user can read balances of, and transfer money out of, other users' accounts.",
+          "recommendation": "Restore the ownerId comparison and the 403 FORBIDDEN error.",
+          "confidence": 0.95
+        }
+      ]
+    }
+  ],
+  "code_quality": [
+    {
+      "findings": [
+        {
+          "title": "getOwnedAccount no longer matches its documented contract",
+          "description": "The doc comment says the account is returned only if it belongs to userId, but the ownership branch was deleted.",
+          "severity": "medium",
+          "category": "logic",
+          "file_path": "src/accounts.ts",
+          "start_line": 21,
+          "end_line": 23,
+          "evidence": "if (account.ownerId !== userId) {",
+          "impact": "Callers relying on the documented behaviour are silently broken.",
+          "recommendation": "Restore the check or rename the function and update every caller.",
+          "confidence": 0.8
+        },
+        {
+          "title": "Transfer amount not validated",
+          "description": "Hallucinated finding used to test validation: this file is not in the PR.",
+          "severity": "high",
+          "category": "logic",
+          "file_path": "src/transfers.ts",
+          "start_line": 10,
+          "evidence": "const amount = req.body.amount",
+          "confidence": 0.6
+        },
+        {
+          "title": "Unreachable error branch",
+          "description": "Hallucinated location used to test validation: accounts.ts has only 22 lines.",
+          "severity": "low",
+          "category": "maintainability",
+          "file_path": "src/accounts.ts",
+          "start_line": 80,
+          "end_line": 85,
+          "evidence": "throw new AppError(404, 'ACCOUNT_NOT_FOUND', 'Account not found');",
+          "confidence": 0.4
+        }
+      ]
+    }
+  ],
+  "testing": [
+    {
+      "findings": [
+        {
+          "title": "Authorization regression is not covered by updated tests",
+          "description": "The PR removes the ownership check without changing tests. The existing tests expecting 403 for another user's account will fail, which is the correct signal; they must not be deleted to make CI pass.",
+          "severity": "medium",
+          "category": "testing",
+          "file_path": "test/api.test.ts",
+          "start_line": 70,
+          "end_line": 79,
+          "evidence": "it(\"forbids reading another user's account\", async () => {",
+          "impact": "If the tests are weakened, the bypass ships unnoticed.",
+          "recommendation": "Keep the cross-account 403 tests and run CI before merging.",
+          "confidence": 0.85
+        },
+        {
+          "title": "Schema-invalid finding used to test rejection",
+          "description": "Severity value is not allowed.",
+          "severity": "urgent",
+          "category": "testing",
+          "file_path": "test/api.test.ts"
+        }
+      ]
+    }
+  ]
+}

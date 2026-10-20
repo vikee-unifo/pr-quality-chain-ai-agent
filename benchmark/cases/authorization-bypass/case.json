@@ -1,0 +1,12 @@
+{
+  "_comment": "Only title, description and tool_results reach the model. Keep them neutral: never name the seeded defect (the original commit subject did).",
+  "name": "authorization-bypass",
+  "source": "the-payment-app (read-only), git diff main...defect/authorization-bypass",
+  "base": "main a9dc259f7566bc34fd937f8c7cac88fb31a07d08",
+  "head": "defect/authorization-bypass 60fe886dd459e661ae12a3b354f76d51c8bba1db",
+  "title": "Simplify account lookup",
+  "description": "",
+  "repo": "vikee-unifo/the-payment-app",
+  "head_sha": "60fe886dd459e661ae12a3b354f76d51c8bba1db",
+  "tool_results": []
+}
