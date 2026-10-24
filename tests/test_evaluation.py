@@ -86,7 +86,7 @@ def test_generic_or_misplaced_findings_do_not_count_as_detection(kw):
 
 def test_mock_benchmark_reports_funnel_and_denominators(tmp_path):
     store = Store(str(tmp_path / "eval.db"))
-    rows, summary = asyncio.run(run_benchmark(False, Settings(), store=store))
+    rows, summary = asyncio.run(run_benchmark(False, Settings(), store=store, names=["authorization-bypass"]))
     [row] = rows
     assert summary["mode"].startswith("MOCK") and row["simulated"] and row["provider"] == "mock"
     assert (row["findings_generated"], row["schema_rejected"], row["after_aggregation"]) == (5, 1, 4)
@@ -172,3 +172,108 @@ def test_cli_evaluate_writes_results_and_database(tmp_path, capsys):
     text = out_file.read_text()
     assert "MOCK" in text and "Provider/model: mock/mock-model" in text and "unavailable" in text
     assert Store(str(db)).db.execute("SELECT COUNT(*) FROM evaluation_runs").fetchone()[0] == 1
+
+
+# ---- the three-case benchmark ----
+
+EXPECTED_BY_CASE = {
+    # case: (agents selected, seeded issues, seeded detected by the scripted mock, labelled accepted findings)
+    "authorization-bypass": (3, 1, 1, 2),
+    "atomicity-rollback-removed": (3, 1, 1, 2),
+    "zero-amount-validation-test-removed": (2, 2, 2, 2),
+}
+
+
+def test_full_mock_benchmark_covers_all_three_target_agents(tmp_path):
+    rows, summary = asyncio.run(run_benchmark(False, Settings(), store=Store(str(tmp_path / "all.db"))))
+    by_case = {r["case"]: r for r in rows}
+    assert set(by_case) == set(EXPECTED_BY_CASE)
+    for case, (agents, seeded, detected, labeled) in EXPECTED_BY_CASE.items():
+        row = by_case[case]
+        assert (len(row["agents"]), row["seeded"], row["seeded_detected"], row["labeled_accepted"]) == (
+            agents,
+            seeded,
+            detected,
+            labeled,
+        ), case
+        assert row["status"] == "complete" and row["unlabeled_accepted"] == [] and row["duplicates"] == 0
+    assert summary["evaluation_status"] == "complete" and summary["agent_calls"] == 8
+    assert summary["seeded_detection"] == {"value": 1.0, "numerator": 4, "denominator": 4}
+
+
+def _issue(case, issue_id):
+    labels = json.loads((CASES_DIR / case / "expected.json").read_text())["seeded_issues"]
+    return next(i for i in labels if i["id"] == issue_id)
+
+
+@pytest.mark.parametrize(
+    "case, issue_id, kw",
+    [
+        # right file, lines and category, but nothing about rollback / balances
+        (
+            "atomicity-rollback-removed",
+            "ATOM-1",
+            dict(
+                file_path="src/transfers.ts",
+                category="logic",
+                start_line=56,
+                end_line=58,
+                title="Simplify control flow",
+                description="This block could be extracted into a helper.",
+            ),
+        ),
+        # right words, wrong category for the atomicity defect
+        (
+            "atomicity-rollback-removed",
+            "ATOM-1",
+            dict(
+                file_path="src/transfers.ts",
+                category="maintainability",
+                start_line=56,
+                end_line=58,
+                title="Rollback removed",
+                description="Balances are no longer restored after a debit.",
+            ),
+        ),
+        # validation file but no mention of zero
+        (
+            "zero-amount-validation-test-removed",
+            "VAL-1",
+            dict(
+                file_path="src/validation.ts",
+                category="logic",
+                start_line=11,
+                end_line=11,
+                title="Error message",
+                description="The amount error message could be clearer.",
+            ),
+        ),
+        # test file, mentions zero, but not that tests were removed
+        (
+            "zero-amount-validation-test-removed",
+            "TEST-2",
+            dict(
+                file_path="test/api.test.ts",
+                category="testing",
+                start_line=132,
+                end_line=134,
+                title="Zero test naming",
+                description="Rename the zero amount test case.",
+            ),
+        ),
+    ],
+)
+def test_new_labels_reject_generic_findings(case, issue_id, kw):
+    assert not matches_seeded(finding(**{"evidence": "", **kw}), _issue(case, issue_id))
+
+
+def test_cli_rejects_unknown_case_before_writing(tmp_path, capsys):
+    db = tmp_path / "x.db"
+    assert main(["evaluate", "--case", "nope", "--db", str(db)]) == 2
+    assert "unknown case" in capsys.readouterr().err and not db.exists()
+
+
+def test_cli_runs_only_selected_cases(tmp_path, capsys):
+    assert main(["evaluate", "--case", "zero-amount-validation-test-removed", "--db", str(tmp_path / "s.db")]) == 0
+    out = capsys.readouterr().out
+    assert "zero-amount-validation-test-removed" in out and "authorization-bypass" not in out

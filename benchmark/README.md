@@ -35,6 +35,20 @@ The scripted mock responses deliberately include a duplicate (code_quality repea
 finding in a file that is not in the PR, a finding at a line that does not exist, and a schema-invalid finding,
 so that validation, aggregation and rejection are exercised.
 
+## atomicity-rollback-removed (Code Quality)
+
+Synthetic: `src/transfers.ts` from `the-payment-app` `main` (a9dc259) with the try/catch rollback removed, diffed
+outside that repo (no branch exists). If anything fails after the debit, money leaves one account and never
+arrives in the other. Title: "Simplify transfer execution". Context: the unchanged `test/api.test.ts`, which still
+contains the rollback test.
+
+## zero-amount-validation-test-removed (Testing)
+
+Synthetic: `parseAmount` changed from `value < min` to `value < 0` (zero amounts pass), and the `zero` and
+`negative zero` rows deleted from the invalid-amount test table so CI stays green. Two seeded issues: the
+validation regression and the removed tests. Title: "Tidy up amount validation". Only code_quality and testing
+run on this case: the risk classifier finds nothing security-sensitive in these paths.
+
 ## Adding a case
 
 1. Create the folder and files above. Write `expected.json` **before** looking at any review output. Keep the

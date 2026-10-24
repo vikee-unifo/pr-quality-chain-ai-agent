@@ -289,3 +289,39 @@ def test_litellm_does_not_load_dotenv_on_its_own_once_the_app_is_imported(import
         cwd=tmp_path,
     )
     assert result.stdout.split()[-1:] == [expected], result.stderr[-500:]
+
+
+@pytest.mark.parametrize("case", __import__("app.benchmark", fromlist=["list_cases"]).list_cases())
+def test_no_benchmark_case_leaks_its_answer_to_any_agent(case):
+    from app.benchmark import load_case
+
+    pr, expected, case_dir = load_case(case)
+    recorder = Recorder()
+    asyncio.run(run_review(pr, ModelConnector(recorder, "m"), Settings()))
+    assert recorder.requests
+    meta = json.loads((case_dir / "case.json").read_text())
+    labels = expected["seeded_issues"] + expected["acceptable_findings"]
+    scripted = json.loads((case_dir / "mock_responses.json").read_text())
+    forbidden = [
+        "seeded",
+        "defect",
+        "expected",
+        "synthetic",
+        case,
+        meta["source"],
+        *(i["id"] for i in labels),
+        *(i["description"] for i in labels),
+        *(
+            f["title"]
+            for steps in scripted.values()
+            if isinstance(steps, list)
+            for step in steps
+            for f in step["findings"]
+        ),
+    ]
+    for request in recorder.requests:
+        spec = AGENTS[request.metadata["agent"]]
+        assert request.system == SYSTEM_TEMPLATE.format(title=spec.title, focus=spec.focus)
+        user = request.messages[0].content.lower()
+        for term in forbidden:
+            assert term.lower() not in user, (case, request.metadata["agent"], term)

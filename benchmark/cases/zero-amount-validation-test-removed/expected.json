@@ -1,0 +1,35 @@
+{
+  "_comment": "Ground truth written before any review run. Never sent to a model. Target agent: testing.",
+  "seeded_issues": [
+    {
+      "id": "VAL-1",
+      "description": "parseAmount now checks value < 0 instead of value < min, so zero (and -0) amounts pass validation and zero-amount transfers are accepted.",
+      "severity": "medium",
+      "categories": ["logic", "security", "error_handling", "regression"],
+      "file_path": "src/validation.ts",
+      "line_ranges": {"old": [11, 11], "new": [11, 11]},
+      "line_tolerance": 2,
+      "concept_terms": [
+        ["zero", "< 0", "non-positive"],
+        ["amount", "validat", "minimum", "min "]
+      ],
+      "evidence_terms": ["value < 0"]
+    },
+    {
+      "id": "TEST-2",
+      "description": "The tests that rejected zero and negative-zero amounts were deleted instead of being kept as regression guards, hiding the validation change.",
+      "severity": "medium",
+      "categories": ["testing", "regression"],
+      "file_path": "test/api.test.ts",
+      "line_ranges": {"old": [133, 135], "new": [130, 136]},
+      "line_tolerance": 3,
+      "concept_terms": [
+        ["zero"],
+        ["test", "case", "coverage"],
+        ["remov", "delet", "drop", "missing", "no longer"]
+      ],
+      "evidence_terms": ["'zero', 0", "negative zero"]
+    }
+  ],
+  "acceptable_findings": []
+}

@@ -1,0 +1,33 @@
+diff --git a/src/transfers.ts b/src/transfers.ts
+index 8dce106..7375d0c 100644
+--- a/src/transfers.ts
++++ b/src/transfers.ts
+@@ -53,21 +53,12 @@ export function executeTransfer(
+     throw new AppError(422, 'BALANCE_LIMIT', 'Destination balance would exceed the supported limit');
+   }
+ 
+-  const fromBefore = from.balance;
+-  const toBefore = to.balance;
+-  try {
+-    from.balance -= input.amount;
+-    hooks.afterDebit?.();
+-    to.balance += input.amount;
++  from.balance -= input.amount;
++  hooks.afterDebit?.();
++  to.balance += input.amount;
+ 
+-    const transfer: Transfer = { id: randomUUID(), ...input, createdAt: new Date().toISOString() };
+-    store.transfers.set(transfer.id, transfer);
+-    store.idempotency.set(scopedKey, { requestHash, transferId: transfer.id });
+-    return { transfer, replayed: false };
+-  } catch (err) {
+-    // Roll back so a failure never leaves a debit without its matching credit.
+-    from.balance = fromBefore;
+-    to.balance = toBefore;
+-    throw err;
+-  }
++  const transfer: Transfer = { id: randomUUID(), ...input, createdAt: new Date().toISOString() };
++  store.transfers.set(transfer.id, transfer);
++  store.idempotency.set(scopedKey, { requestHash, transferId: transfer.id });
++  return { transfer, replayed: false };
+ }

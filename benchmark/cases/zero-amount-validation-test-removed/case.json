@@ -1,0 +1,10 @@
+{
+  "_comment": "Only title, description and tool_results reach the model. Synthetic PR: defect applied to a copy of the-payment-app main (a9dc259) and diffed outside that repo; no branch exists.",
+  "name": "zero-amount-validation-test-removed",
+  "source": "the-payment-app main a9dc259, parseAmount minimum relaxed and the zero-amount test rows deleted (synthetic)",
+  "title": "Tidy up amount validation",
+  "description": "",
+  "repo": "vikee-unifo/the-payment-app",
+  "head_sha": null,
+  "tool_results": []
+}

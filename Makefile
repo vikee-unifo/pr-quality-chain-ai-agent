@@ -42,12 +42,13 @@ serve: setup  ## API on http://localhost:8000 (uses the provider configured in .
 	$(BIN)/python -m uvicorn app.main:create_app --factory --port 8000
 
 # Real model calls (uses quota/credits). Needs LLM_PROVIDER=litellm, LLM_MODEL and the provider key in .env.
-# Refuses to overwrite earlier results. Override names with: make live RUN=2
+# Refuses to overwrite earlier results. Override names with: make live RUN=2. One case only: make live CASE=<name>
 RUN ?= 1
+CASE ?=
 live: setup
 	@for f in live-eval-$(RUN).md live-eval-$(RUN).log live-results-$(RUN).db; do \
 		if [ -e $$f ]; then echo "refusing: $$f exists (use RUN=<n>)"; exit 1; fi; done
-	$(BIN)/python -m app.cli evaluate --live --out live-eval-$(RUN).md --db live-results-$(RUN).db 2> live-eval-$(RUN).log; \
+	$(BIN)/python -m app.cli evaluate --live $(if $(CASE),--case $(CASE)) --out live-eval-$(RUN).md --db live-results-$(RUN).db 2> live-eval-$(RUN).log; \
 		code=$$?; echo "exit=$$code (0 complete, 3 partial, 1 not measured, 2 configuration error); log: live-eval-$(RUN).log"; exit $$code
 
 clean:  ## remove the virtualenv and caches (keeps .env and results)

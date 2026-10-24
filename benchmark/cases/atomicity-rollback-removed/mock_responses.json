@@ -1,0 +1,18 @@
+{
+  "_comment": "SCRIPTED mock output for offline tests. Hand-written; NOT model detections.",
+  "code_quality": [{"findings": [{
+    "title": "Debit is no longer rolled back when the transfer fails",
+    "description": "The try/catch that restored both balances was removed. If hooks.afterDebit or anything before the credit throws, the source keeps the debit and the destination never receives the credit.",
+    "severity": "high", "category": "error_handling", "file_path": "src/transfers.ts", "start_line": 56, "end_line": 58,
+    "evidence": "from.balance -= input.amount;\nhooks.afterDebit?.();",
+    "impact": "Money disappears from accounts on partial failure; balances become inconsistent.",
+    "recommendation": "Restore the snapshot of both balances and the catch block that rolls them back.", "confidence": 0.9}]}],
+  "security": [{"findings": []}],
+  "testing": [{"findings": [{
+    "title": "Existing rollback test will fail",
+    "description": "test/api.test.ts still expects balances to be restored after a failure between debit and credit; this PR removes that behaviour without updating tests.",
+    "severity": "medium", "category": "testing", "file_path": "test/api.test.ts", "start_line": 218, "end_line": 218,
+    "evidence": "it('rolls back the debit when a failure occurs before the credit', async () => {",
+    "impact": "CI fails, or the test gets deleted to make it pass.",
+    "recommendation": "Keep the rollback and the test.", "confidence": 0.8}]}]
+}

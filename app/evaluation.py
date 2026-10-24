@@ -206,7 +206,7 @@ def summarize(rows: list[dict]) -> dict:
 
 
 async def run_benchmark(
-    live: bool, settings: Settings, cases_dir: Path = CASES_DIR, store=None
+    live: bool, settings: Settings, cases_dir: Path = CASES_DIR, store=None, names: list[str] | None = None
 ) -> tuple[list[dict], dict]:
     from app.llm.connector import build_connector
 
@@ -214,7 +214,11 @@ async def run_benchmark(
         require_live_provider(settings)
     rows = []
     started = datetime.now(timezone.utc)
-    for name in list_cases(cases_dir):
+    available = list_cases(cases_dir)
+    unknown = sorted(set(names or []) - set(available))
+    if unknown:
+        raise ValueError(f"unknown benchmark case(s): {', '.join(unknown)}; available: {', '.join(available)}")
+    for name in names or available:
         if live:
             connector = build_connector(settings)
         else:

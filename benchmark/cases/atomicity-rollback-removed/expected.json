@@ -1,0 +1,27 @@
+{
+  "_comment": "Ground truth written before any review run. Never sent to a model. Target agent: code_quality.",
+  "seeded_issues": [
+    {
+      "id": "ATOM-1",
+      "description": "The try/catch rollback was removed from executeTransfer: if anything fails after the debit (e.g. the afterDebit hook), the source is debited without the matching credit and balances become inconsistent.",
+      "severity": "high",
+      "categories": ["logic", "error_handling", "regression"],
+      "file_path": "src/transfers.ts",
+      "line_ranges": {"old": [56, 72], "new": [56, 64]},
+      "line_tolerance": 2,
+      "concept_terms": [
+        ["rollback", "roll back", "restor", "revert", "undo", "atomic"],
+        ["debit", "credit", "balance", "inconsisten"]
+      ],
+      "evidence_terms": ["fromBefore", "toBefore", "from.balance -= input.amount"]
+    }
+  ],
+  "acceptable_findings": [
+    {
+      "id": "TEST-A",
+      "description": "The existing rollback test will now fail; tests were not updated.",
+      "category": "testing",
+      "file_paths": ["src/transfers.ts", "test/api.test.ts"]
+    }
+  ]
+}

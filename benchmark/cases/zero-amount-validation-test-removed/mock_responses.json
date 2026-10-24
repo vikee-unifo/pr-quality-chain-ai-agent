@@ -1,0 +1,17 @@
+{
+  "_comment": "SCRIPTED mock output for offline tests. Hand-written; NOT model detections.",
+  "code_quality": [{"findings": [{
+    "title": "Zero amounts now pass validation",
+    "description": "parseAmount compares against 0 instead of min, so a zero amount is no longer rejected even though min defaults to 1 for transfers.",
+    "severity": "medium", "category": "logic", "file_path": "src/validation.ts", "start_line": 11, "end_line": 11,
+    "evidence": "if (value < 0) {",
+    "impact": "Zero-amount transfers are accepted and recorded.",
+    "recommendation": "Compare against min again.", "confidence": 0.85}]}],
+  "testing": [{"findings": [{
+    "title": "Zero-amount test cases were deleted",
+    "description": "The 'zero' and 'negative zero' rows were removed from the invalid-amount test table, so the relaxed validation is no longer covered.",
+    "severity": "medium", "category": "testing", "file_path": "test/api.test.ts", "start_line": 133, "end_line": 135,
+    "evidence": "['zero', 0],",
+    "impact": "The regression ships silently.",
+    "recommendation": "Restore both test rows.", "confidence": 0.85}]}]
+}

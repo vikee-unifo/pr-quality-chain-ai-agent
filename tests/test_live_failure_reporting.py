@@ -59,7 +59,7 @@ def stub_provider(monkeypatch, respond):
 
 def run(tmp_path, capsys):
     out, db = tmp_path / "live.md", tmp_path / "live.db"
-    code = main(["evaluate", "--live", "--out", str(out), "--db", str(db)])
+    code = main(["evaluate", "--live", "--case", "authorization-bypass", "--out", str(out), "--db", str(db)])
     captured = capsys.readouterr()
     return code, captured, out, db
 
@@ -129,6 +129,6 @@ def test_complete_review_with_no_detection_reports_zero(live_env, monkeypatch, c
 
 def test_mock_evaluation_is_unchanged(tmp_path, capsys, monkeypatch):
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
-    assert main(["evaluate", "--db", str(tmp_path / "m.db")]) == 0
+    assert main(["evaluate", "--case", "authorization-bypass", "--db", str(tmp_path / "m.db")]) == 0
     out = capsys.readouterr().out
     assert out.startswith("# Benchmark results: MOCK (scripted; not model performance)\n") and "1.0 (1/1)" in out

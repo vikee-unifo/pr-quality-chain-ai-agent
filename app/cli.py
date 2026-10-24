@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 from app import report
-from app.benchmark import load_case
+from app.benchmark import list_cases, load_case
 from app.config import Settings
 from app.evaluation import render_markdown, require_live_provider, run_benchmark
 from app.llm import ProviderError
@@ -46,6 +46,7 @@ def main(argv: list[str] | None = None) -> int:
     ev.add_argument("--live", action="store_true", help="use the configured real provider (costs money)")
     ev.add_argument("--out", type=Path)
     ev.add_argument("--db", type=Path, help="SQLite file for results (default: DATABASE_PATH)")
+    ev.add_argument("--case", action="append", dest="cases", help="run only this case (repeatable; default: all)")
     args = parser.parse_args(argv)
 
     settings = Settings.from_env()
@@ -64,8 +65,13 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     if args.command == "evaluate":
+        available = list_cases()
+        unknown = sorted(set(args.cases or []) - set(available))
+        if unknown:  # checked before the database is created
+            print(f"error: unknown case(s): {', '.join(unknown)}; available: {', '.join(available)}", file=sys.stderr)
+            return 2
         store = Store(str(args.db) if args.db else settings.database_path)
-        rows, summary = asyncio.run(run_benchmark(args.live, settings, store=store))
+        rows, summary = asyncio.run(run_benchmark(args.live, settings, store=store, names=args.cases))
         text = render_markdown(rows, summary)
         if args.out:
             args.out.write_text(

@@ -1,0 +1,27 @@
+diff --git a/src/validation.ts b/src/validation.ts
+index 8896fbb..1ab3208 100644
+--- a/src/validation.ts
++++ b/src/validation.ts
+@@ -8,7 +8,7 @@ export function parseAmount(value: unknown, field: string, min = 1): number {
+   if (typeof value !== 'number' || !Number.isInteger(value)) {
+     throw new AppError(400, 'INVALID_AMOUNT', `${field} must be an integer number of paise`);
+   }
+-  if (value < min) {
++  if (value < 0) {
+     throw new AppError(400, 'INVALID_AMOUNT', `${field} must be at least ${min}`);
+   }
+   if (value > MAX_AMOUNT) {
+diff --git a/test/api.test.ts b/test/api.test.ts
+index 68532f6..c4ef29f 100644
+--- a/test/api.test.ts
++++ b/test/api.test.ts
+@@ -130,9 +130,7 @@ describe('transfers', () => {
+   });
+ 
+   it.each([
+-    ['zero', 0],
+     ['negative', -100],
+-    ['negative zero', -0],
+     ['decimal', 10.5],
+     ['numeric string', '100'],
+     ['non-numeric string', 'abc'],

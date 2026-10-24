@@ -28,7 +28,7 @@ runs the offline test suite and prints a demo review of the benchmark PR. No API
 | `make demo` | scripted mock review of the benchmark PR | no |
 | `make evaluate` | mock benchmark (tests the pipeline, not a model) | no |
 | `make serve` | API on http://localhost:8000 | only if `.env` sets `LLM_PROVIDER=litellm` |
-| `make live` | live benchmark; refuses to overwrite earlier results (`make live RUN=2`) | **yes** (uses quota/credits) |
+| `make live` | live benchmark, all 3 cases (8 calls); `CASE=<name>` for one; refuses to overwrite results (`RUN=2`) | **yes** (uses quota/credits) |
 | `make clean` | remove `.venv` and caches (keeps `.env` and results) | no |
 
 ### Using Gemini (or another real model)
@@ -41,7 +41,8 @@ runs the offline test suite and prints a demo review of the benchmark PR. No API
    GEMINI_API_KEY=<your key>
    ```
    The timeouts in `.env.example` are already sized for Gemini 3.x (see the comments there).
-3. `make live` makes at most 3 requests with those settings and writes `live-eval-1.md`, `live-eval-1.log` and
+3. `make live` makes at most 8 requests with those settings (3 cases; `make live CASE=atomicity-rollback-removed`
+   runs one) and writes `live-eval-1.md`, `live-eval-1.log` and
    `live-results-1.db`. Exit codes: 0 complete, 3 partial, 1 nothing measured, 2 configuration error (for example
    a missing key; nothing is called or written).
 4. To read the full review, findings included, from the database without another model call:
@@ -286,8 +287,16 @@ when you enable publishing.
 
 ## Benchmark and evaluation
 
-See [`benchmark/README.md`](benchmark/README.md). The single case, `authorization-bypass`, comes read-only from
-`../the-payment-app`, which is a **separate Git repository** and is never modified by this project.
+See [`benchmark/README.md`](benchmark/README.md). Three seeded cases, one aimed at each agent, all based on
+`../the-payment-app`, a **separate Git repository** this project never modifies:
+
+| Case | Seeded defect | Target agent | Source |
+|---|---|---|---|
+| `authorization-bypass` | ownership check removed (high) | Security | real branch `defect/authorization-bypass` |
+| `atomicity-rollback-removed` | transfer rollback removed: debit without credit on failure (high) | Code Quality | synthetic diff against `main` |
+| `zero-amount-validation-test-removed` | zero amounts accepted (medium) and the tests that caught it deleted (medium) | Testing | synthetic diff against `main` |
+
+`python -m app.cli evaluate --case <name>` (repeatable) runs a subset.
 
 `python -m app.cli evaluate [--live]` runs every case, prints a Markdown report and stores it in SQLite
 (`evaluation_runs`, linked to the per-case `review_runs`). Every row records provider, model, review status, and
