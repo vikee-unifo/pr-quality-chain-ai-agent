@@ -356,3 +356,36 @@ includes clean control PRs, plus human timing studies.
   caller context (e.g. which routes use `getOwnedAccount`) depend on what the model can infer.
 - Seeded-issue matching uses labelled term lists; a correct finding phrased with none of the listed terms is missed
   and needs human adjudication.
+
+
+## Handy Commands for Demo
+
+1. Offline Check
+```text
+cd pr-quality-chain
+make
+make evaluate
+```
+2. Check Gemini key(no API call)
+```text
+.venv/bin/python -c "import app, litellm; from app.config import Settings; s=Settings.from_env(); print(s.llm_provider, s.llm_model, litellm.validate_environment(s.llm_model)['missing_keys'])"
+```
+
+3. Live Run
+```text
+make live RUN=2
+```
+
+4. See the result
+```text
+sed -n '1,/```json/p' live-eval-2.md
+```
+
+5. print the full findings for each case
+```text
+.venv/bin/python -c "
+  from app.store import Store; from app import report
+  s = Store('live-results-2.db')
+  for r in s.recent(10): print(report.render(s.get(r['run_id'])), '\n' + '=' * 100)
+  "
+```
