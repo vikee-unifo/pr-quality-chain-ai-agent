@@ -371,10 +371,18 @@ make evaluate
 .venv/bin/python -c "import app, litellm; from app.config import Settings; s=Settings.from_env(); print(s.llm_provider, s.llm_model, litellm.validate_environment(s.llm_model)['missing_keys'])"
 ```
 
-3. Live Run
+3. Live Run 
 ```text
+
+# single case
+live RUN=2 CASE=atomicity-rollback-removed
+live RUN=2 CASE=authorization-bypass
+live RUN=2 CASE=zero-amount-validation-test-removed
+
+# all 3 cases
 make live RUN=2
 ```
+
 
 4. See the result
 ```text
