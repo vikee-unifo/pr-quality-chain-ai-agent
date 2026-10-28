@@ -265,6 +265,7 @@ def test_litellm_does_not_log_prompts_or_keys_even_with_debug_root_logging(monke
     assert expect_blocked_network()  # the real request path was exercised and stopped at the socket
     for secret in ("SYSTEM-PROMPT-MARKER", "SOURCE-DIFF-MARKER", "SECRETKEY123456"):
         assert secret not in output
+    assert "Give Feedback" not in output  # LiteLLM's per-error banner is suppressed
 
 
 DOTENV_PROBE = """

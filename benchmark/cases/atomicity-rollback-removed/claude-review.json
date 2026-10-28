@@ -1,0 +1,20 @@
+{
+  "_provenance": "Reference review written by Claude (Anthropic) in a development session from the same diff and context the agents receive. NOT a PR Quality Chain live run and NOT a Gemini result. Not independent: the same assistant wrote this benchmark's expected.json.",
+  "code_quality": [{"findings": [{
+    "title": "Transfer is no longer atomic: a failure after the debit loses money",
+    "description": "The try/catch that saved both balances and restored them on error was removed. If anything throws between the debit and the credit (here hooks.afterDebit, in production any I/O or validation failure), the source account stays debited and the destination is never credited.",
+    "severity": "high", "category": "error_handling", "file_path": "src/transfers.ts", "start_line": 56, "end_line": 58,
+    "evidence": "from.balance -= input.amount;\nhooks.afterDebit?.();\nto.balance += input.amount;",
+    "impact": "Money disappears on partial failure and balances become inconsistent; the idempotency key is not stored either, so a retry debits again.",
+    "recommendation": "Restore the snapshot of both balances and the catch block that rolls them back before rethrowing.",
+    "confidence": 0.9}]}],
+  "security": [{"findings": []}],
+  "testing": [{"findings": [{
+    "title": "Existing rollback test will fail; the PR does not address it",
+    "description": "The atomicity test injects a failure between debit and credit and expects both balances unchanged. This PR removes exactly that behaviour without touching tests.",
+    "severity": "medium", "category": "testing", "file_path": "test/api.test.ts", "start_line": 218, "end_line": 226,
+    "evidence": "it('rolls back the debit when a failure occurs before the credit', async () => {",
+    "impact": "CI fails, or the test is deleted and the regression ships.",
+    "recommendation": "Keep the test and restore the rollback.",
+    "confidence": 0.85}]}]
+}

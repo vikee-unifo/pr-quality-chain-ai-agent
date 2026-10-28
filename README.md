@@ -239,9 +239,9 @@ SDK-level retries, map SDK errors to `ProviderError` (see `classify_exception`),
 | `unknown` | no | anything else |
 
 Retry ownership: `ModelConnector` is the only retry layer. The LiteLLM adapter passes `num_retries=0` and
-`max_retries=0`. Delays use exponential backoff with full jitter (1s base, 30s cap), or exactly `Retry-After` when
-the provider sends it. A retry happens only if attempts remain (`LLM_MAX_ATTEMPTS`) and the delay fits within
-`LLM_TOTAL_BUDGET_S`.
+`max_retries=0`. Delays use exponential backoff with full jitter (2s base, 30s cap), or exactly the provider's own
+wait when it sends one: a `Retry-After` header, or Gemini's `retryDelay` in the error body. A retry happens only if
+attempts remain (`LLM_MAX_ATTEMPTS`) and the delay fits within `LLM_TOTAL_BUDGET_S`.
 
 ### Logs
 
@@ -375,9 +375,9 @@ make evaluate
 ```text
 
 # single case
-live RUN=2 CASE=atomicity-rollback-removed
-live RUN=2 CASE=authorization-bypass
-live RUN=2 CASE=zero-amount-validation-test-removed
+make live RUN=2 CASE=atomicity-rollback-removed
+make live RUN=2 CASE=authorization-bypass
+make live RUN=2 CASE=zero-amount-validation-test-removed
 
 # all 3 cases
 make live RUN=2

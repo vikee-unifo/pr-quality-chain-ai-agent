@@ -7,6 +7,7 @@ are disabled (num_retries=0, max_retries=0) to stop the two layers multiplying a
 from __future__ import annotations
 
 import logging
+import re
 import time
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -26,6 +27,7 @@ _MISSING_CREDENTIAL_HINTS = (
     "no api key",
     "api_key client option must be set",
 )
+_RETRY_DELAY = re.compile(r'"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"')
 # LiteLLM's own loggers bypass our redaction and log request parameters at DEBUG.
 _LITELLM_LOGGERS = ("LiteLLM", "LiteLLM Router", "LiteLLM Proxy")
 
@@ -40,16 +42,18 @@ def _retry_after(exc: Exception) -> float | None:
     try:
         value = headers.get("retry-after")
     except AttributeError:
-        return None
-    if not value:
-        return None
-    try:
-        return max(0.0, float(value))
-    except ValueError:
+        value = None
+    if value:
         try:
-            return max(0.0, parsedate_to_datetime(value).timestamp() - time.time())
-        except (TypeError, ValueError):
-            return None
+            return max(0.0, float(value))
+        except ValueError:
+            try:
+                return max(0.0, parsedate_to_datetime(value).timestamp() - time.time())
+            except (TypeError, ValueError):
+                pass
+    # Gemini sends the wait in the error body (google.rpc.RetryInfo), not as a Retry-After header.
+    match = _RETRY_DELAY.search(str(getattr(exc, "message", None) or exc))
+    return float(match.group(1)) if match else None
 
 
 def classify_exception(exc: Exception, provider: str = "litellm") -> ProviderError:
@@ -136,6 +140,7 @@ class LiteLLMProvider:
                 retryable=False,
             ) from exc
         _quiet_litellm_logging()
+        litellm.suppress_debug_info = True  # stops the "Give Feedback / Get Help" banner printed on every error
         self.check_credentials(request.model)
 
         kwargs: dict[str, Any] = {

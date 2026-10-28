@@ -149,6 +149,51 @@ def test_litellm_exceptions_are_classified(exc, category):
     assert error.category is category
 
 
+GEMINI_429 = (
+    'geminiException - { "error": { "code": 429, "message": "You exceeded your current quota, please check your '
+    'plan and billing details. Quota exceeded for metric: free tier requests per minute", '
+    '"status": "RESOURCE_EXHAUSTED", "details": [ { "@type": "type.googleapis.com/google.rpc.RetryInfo", '
+    '"retryDelay": "%s" } ] } }'
+)
+
+
+@pytest.mark.parametrize("delay, expected", [("37s", 37.0), ("1.5s", 1.5)])
+def test_gemini_retry_delay_in_error_body_is_used(delay, expected):
+    error = classify_exception(litellm.RateLimitError(GEMINI_429 % delay, "gemini", "m"))
+    assert error.retry_after_s == expected and error.status == 429
+    assert error.category is ErrorCategory.RATE_LIMIT_OR_QUOTA and error.retryable
+
+
+def test_retry_after_header_wins_over_body_and_absent_hint_is_none():
+    exc = litellm.RateLimitError(GEMINI_429 % "37s", "gemini", "m", response=_response(429, {"retry-after": "5"}))
+    assert classify_exception(exc).retry_after_s == 5
+    assert classify_exception(litellm.RateLimitError("429 no hint", "gemini", "m")).retry_after_s is None
+
+
+def test_connector_waits_the_delay_gemini_asks_for(monkeypatch):
+    sleeps, calls = [], []
+
+    async def fake_sleep(delay):
+        sleeps.append(delay)
+
+    async def acompletion(**kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            raise litellm.RateLimitError(GEMINI_429 % "12s", "gemini", "m")
+        return litellm.ModelResponse(id="r", model="m", choices=[{"message": {"role": "assistant", "content": "ok"}}])
+
+    monkeypatch.setattr(litellm, "acompletion", acompletion)
+    connector = ModelConnector(
+        LiteLLMProvider(api_key="test-key-000000"), "gemini/gemini-3.8-flash", max_attempts=2, sleep=fake_sleep
+    )
+    assert call(connector).content == "ok" and sleeps == [12.0] and len(calls) == 2
+
+
+def test_default_backoff_starts_at_two_seconds():
+    connector = ModelConnector(MockProvider(), "m")
+    assert connector.base_delay_s == 2.0 and all(connector.backoff(1, None) <= 2.0 for _ in range(50))
+
+
 def test_litellm_retry_after_header_and_status_are_preserved():
     exc = litellm.RateLimitError("rate limit", "openai", "m", response=_response(429, {"retry-after": "12"}))
     error = classify_exception(exc)

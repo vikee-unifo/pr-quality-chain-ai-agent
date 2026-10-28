@@ -1,0 +1,29 @@
+{
+  "_provenance": "Reference review written by Claude (Anthropic) in a development session from the same diff and context the agents receive. NOT a PR Quality Chain live run and NOT a Gemini result. Not independent: the same assistant wrote this benchmark's expected.json.",
+  "code_quality": [{"findings": [
+    {
+    "title": "Zero amounts now pass validation",
+    "description": "parseAmount compares against 0 instead of min. Transfers call it with the default min of 1, so a zero amount is no longer rejected; -0 also passes because -0 < 0 is false.",
+    "severity": "medium", "category": "logic", "file_path": "src/validation.ts", "start_line": 11, "end_line": 11,
+    "evidence": "if (value < 0) {",
+    "impact": "Zero-amount transfers are accepted, recorded and consume idempotency keys.",
+    "recommendation": "Compare against min again: if (value < min).",
+    "confidence": 0.9},
+    {
+    "title": "Error message contradicts the new check",
+    "description": "The error still says the amount must be at least min, but the condition now only rejects negatives, so the message is wrong for every caller with min greater than 0.",
+    "severity": "low", "category": "maintainability", "file_path": "src/validation.ts", "start_line": 12, "end_line": 12,
+    "evidence": "${field} must be at least ${min}",
+    "impact": "Misleading errors for API clients.",
+    "recommendation": "Fixing the comparison fixes the message too.",
+    "confidence": 0.7}
+  ]}],
+  "testing": [{"findings": [{
+    "title": "Tests that rejected zero and negative-zero amounts were deleted",
+    "description": "The 'zero' and 'negative zero' rows were removed from the invalid-amount test table in the same PR that relaxed validation, so the suite stays green while the behaviour regresses.",
+    "severity": "medium", "category": "testing", "file_path": "test/api.test.ts", "start_line": 133, "end_line": 135,
+    "evidence": "['zero', 0],",
+    "impact": "The regression is invisible to CI.",
+    "recommendation": "Restore both rows; deleting failing tests in a behaviour-changing PR should block review.",
+    "confidence": 0.9}]}]
+}

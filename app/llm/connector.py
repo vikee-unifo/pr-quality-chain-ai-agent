@@ -26,7 +26,7 @@ class ModelConnector:
         max_output_tokens: int = 4000,
         max_attempts: int = 3,
         total_budget_s: float = 180.0,
-        base_delay_s: float = 1.0,
+        base_delay_s: float = 2.0,
         max_delay_s: float = 30.0,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         rng: random.Random | None = None,
